@@ -1,0 +1,37 @@
+/*
+	BECTI: By Benny (benny_boy66@hotmail.fr)
+	  "Praise the bugs!"
+*/
+
+#include "Rsc\Game.hpp"
+#include "Rsc\Resources.hpp"
+#include "Rsc\Dialogs.hpp"
+#include "Rsc\Notifications.hpp"
+#include "Rsc\Sounds.hpp"
+#include "Rsc\Debriefing.hpp"
+#include "Rsc\Parameters.hpp"
+
+#include "Addons\Strat_mode\res.hpp"
+#include "Addons\Henroth_AirLoadout\dialogs.hpp"
+
+class CfgCommunicationMenu {
+	class CTI_DeleteSelectedBot {
+		text = $STR_CTI_DeleteSelectedBot;
+		submenu = "";
+		expression = "[] call CTI_CL_FNC_DeleteSelectedBot;";
+		icon = "";
+		cursor = "";
+		enable = "1";
+		removeAfterExpressionCall = 0;
+	};
+};
+
+loadScreen = "banner.paa";
+// ^HS^ for Headless Client
+joinUnassigned = 0;
+//disableChannels[]={0,3};
+
+enableDebugConsole = 1;
+
+wreckManagerMode=0;
+corpseManagerMode = 0;

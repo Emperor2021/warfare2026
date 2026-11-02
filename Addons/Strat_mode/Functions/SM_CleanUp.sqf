@@ -1,0 +1,250 @@
+/*
+    SM_CleanUp.sqf
+
+    Modified for BECTI JIP support.
+
+    Purpose:
+    - Keep AI groups of disconnected players.
+    - Keep their AI units alive while the player is disconnected.
+    - Do not interfere with normal cleanup of abandoned AI groups.
+*/
+
+
+/* ============================================================
+   REVIVE CLEANUP
+   ============================================================ */
+
+SM_CLEAN_REVIVES = {
+
+    while {!CTI_GameOver} do {
+
+        {
+            if (!isNil {_x getVariable "REV_UNC"}) then {
+
+                if (!isPlayer _x && (_x getVariable "REV_UNC")) then {
+                    _x setDammage 1;
+                };
+            };
+
+            true
+
+        } count playableUnits;
+
+        sleep 3;
+    };
+};
+
+
+/* ============================================================
+   GROUP CLEANUP
+   ============================================================ */
+
+SM_CLEAN_GROUPS = {
+
+    private [
+        "_g",
+        "_players",
+        "_jipPreserve"
+    ];
+
+    while {!CTI_GameOver} do {
+
+        {
+            _g = group _x;
+
+            if !(side _g == resistance) then {
+
+                /*
+                    Count connected human players in the group.
+                */
+                _players = {isPlayer _x} count (units _g);
+
+                /*
+                    JIP protection.
+
+                    This variable is set by
+                    Server_OnPlayerDisconnected.sqf
+                    when the player leaves the server.
+                */
+                _jipPreserve = _g getVariable [
+                    "cti_jip_preserve",
+                    false
+                ];
+
+                /*
+                    Delete the group only when:
+
+                    1. There are no human players.
+                    2. The group is NOT protected for JIP.
+                */
+                if (_players == 0 && !_jipPreserve) then {
+
+                    {
+                        if !(vehicle _x == _x) then {
+
+                            (vehicle _x) lock false;
+
+                            unAssignVehicle _x;
+
+                            _x action [
+                                "eject",
+                                vehicle _x
+                            ];
+
+                            _x action [
+                                "getOut",
+                                vehicle _x
+                            ];
+                        };
+
+                        deleteVehicle _x;
+
+                        true
+
+                    } count (units _g);
+                };
+            };
+
+            true
+
+        } count playableUnits;
+
+        sleep 3;
+    };
+};
+
+
+/* ============================================================
+   GROUND WEAPON HOLDER CLEANUP
+   ============================================================ */
+
+SM_CLEAN_GCONT = {
+
+    private [
+        "_timeout",
+        "_time"
+    ];
+
+    _timeout = {
+
+        _time = time;
+
+        waitUntil {
+            sleep 1;
+            time > _time + 240
+        };
+
+        deleteVehicle _this;
+    };
+
+    while {!CTI_GameOver} do {
+
+        {
+            if (isNil {_x getVariable "GC"}) then {
+
+                _x setVariable [
+                    "GC",
+                    true
+                ];
+
+                _x spawn _timeout;
+            };
+
+        } forEach allMissionObjects "GroundWeaponHolder";
+
+        sleep 10;
+    };
+};
+
+
+/* ============================================================
+   STRUCTURE CLEANUP
+   ============================================================ */
+
+SM_CLEAN_STRUCTURES = {
+
+    private [
+        "_side",
+        "_side_logic",
+        "_new_structures"
+    ];
+
+    _side = _this;
+
+    _side_logic = (_side) call CTI_CO_FNC_GetSideLogic;
+
+    while {!CTI_GameOver} do {
+
+        _new_structures = [];
+
+        {
+            if (getdammage _x == 1) then {
+
+                deleteVehicle _x;
+
+            } else {
+
+                _new_structures set [
+                    count _new_structures,
+                    _x
+                ];
+            };
+
+            true
+
+        } count (
+            _side_logic getVariable [
+                "cti_structures",
+                []
+            ]
+        );
+
+        _side_logic setVariable [
+            "cti_structures",
+            _new_structures,
+            true
+        ];
+
+        sleep 60;
+    };
+};
+
+
+/* ============================================================
+   START CLEANUP SYSTEMS
+   ============================================================ */
+
+0 spawn SM_CLEAN_REVIVES;
+
+
+/*
+    Normal AI group cleanup is active only when
+    CTI AI teams are disabled.
+
+    JIP-protected groups are skipped.
+*/
+if (
+    missionNamespace getVariable [
+        "CTI_AI_TEAMS_ENABLED",
+        0
+    ] == 0
+) then {
+
+    0 spawn SM_CLEAN_GROUPS;
+};
+
+
+0 spawn SM_CLEAN_GCONT;
+
+
+/*
+    Structure cleanup for both sides.
+*/
+{
+    _x spawn SM_CLEAN_STRUCTURES;
+
+} forEach [
+    east,
+    west
+];
+
