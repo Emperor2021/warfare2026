@@ -38,6 +38,29 @@ _classname = _this select 3;
 _factory = _this select 4;
 _veh_infos = _this select 5;
 _seed = _this select 6;
+_seed = _this select 6;
+
+//--- Серверная валидация связности покупателя (AdvNet).
+// При CTI_EW_ANET == 1 радиус покупки в update_actions.fsm = 300000,
+// т.е. дистанционный гейт отключён by design, а клиентский ctrlEnable — не защита.
+// Читаем готовое AN_iNet (его считает серверный AN_Update_Connection).
+// AN_Check_Connection не вызываем: внутри неё waitUntil, контекст вызова не подтверждён.
+private _netOK = true;
+if (missionNamespace getVariable ["CTI_EW_ANET", 0] == 1) then {
+	private _buyerObj = if (typeName _buyer == "OBJECT") then {_buyer} else {objNull};
+	private _sideID = if (typeName _side == "SIDE") then {_side call CTI_CO_FNC_GetSideID} else {-1};
+	private _net  = _buyerObj getVariable ["CTI_Net", -1];
+	private _inet = _buyerObj getVariable ["AN_iNet", -1];
+	_netOK = !isNull _buyerObj && {_net >= 0} && {_inet == _sideID};
+	if (!_netOK) then {
+		diag_log format [":: NET :: Purchase REJECTED (no network): buyer=%1 CTI_Net=%2 AN_iNet=%3 sideID=%4 class=%5 factory=%6", _buyerObj, _net, _inet, _sideID, _classname, _factory];
+	};
+};
+// exitWith строго на верхнем уровне: внутри if then {} он вышел бы только из блока,
+// и покупка бы всё равно прошла
+if (!_netOK) exitWith {};
+
+_buyto_ai = false;
 
 _buyto_ai = false;
 if (typeName _team == "SIDE") then {

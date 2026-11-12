@@ -128,8 +128,12 @@ if (_neededBots > 0) then {
         // === ИНИЦИАЛИЗАЦИЯ МАРКЕРОВ ДЛЯ 3D МИРА ===
         [_bot, _sideID] call CTI_CO_FNC_InitializeNetVehicle;
         
-        // === ЗАПУСК СЕТИ ДЛЯ БОТА НА СЕРВЕРЕ (боты не local на клиенте на dedicated server) ===
-        ["SERVER", "Request_BotNetworkInit", [_bot]] call CTI_CO_FNC_NetSend;
+                // === ЗАПУСК СЕТИ ДЛЯ БОТА ЛОКАЛЬНО ===
+        // Бот создан здесь через createUnit и local на этой машине.
+        // На dedicated сервер его не видит (CTI_AI_Units приходит как objNull),
+        // поэтому серверный запуск не срабатывает. AN_Launch сам создаёт CTI_Net
+        // и спавнит оба цикла там, где бот реально живёт.
+        [_bot, _sideID] spawn AN_Launch;
         
         sleep 0.25;
     };
@@ -349,4 +353,4 @@ if (!CTI_IsServer) then {
 
 player groupChat (localize "STR_CTI_SquadReady_Custom");
 diag_log format ["[BECTI] Стартовый отряд игрока %1 успешно инициализирован. AI: %2, Техника: %3", 
-    name player, count CTI_AI_Units, count CTI_Player_Vehicles];
+    name player, count CTI_AI_Units, count CTI_Player_Vehicles];    

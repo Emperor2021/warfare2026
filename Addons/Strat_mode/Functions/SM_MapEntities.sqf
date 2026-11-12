@@ -181,20 +181,16 @@ if !( (player) getVariable "AN_iNet" == _side_id && (player getVariable ["CTI_Ne
         _isFriendlyVeh = (_side_id == (player getVariable ["CTI_Net",-10]));
         
         // Проверяем радиус сети для техники
-_in_network_range = true;
-if (!(_vehicle isKindOf "Man") && _side_id == (player getvariable ["AN_iNet",-1])) then {
-    if (!isNil {_vehicle getVariable "AN_Conn"} && !isNull (_vehicle getVariable "AN_Conn")) then {
-        _up_r = 0;
-        if (_side in [east,west]) then {
-            _up = (_side) call CTI_CO_FNC_GetSideUpgrades;
-            _up_r = _up select CTI_UPGRADE_NETR;
+        // Связность техники берём из AN_iNet — это состояние считает сервер.
+        // Было: только дистанция до AN_Conn и БЕЗ ветки else.
+        // Когда AN_Reconfigure очищал AN_Conn (техника вне сети), проверка
+        // пропускалась и _in_network_range оставался true -> иконка висела вне сети.
+        // Для расшаренных вражеских целей (HUD_T_OBJ / CTI_HUD_SHARED) поведение не меняем.
+        _in_network_range = true;
+        if (_isFriendlyVeh && {!(_vehicle isKindOf "Man")}) then {
+            private _vehNet = _vehicle getVariable ["AN_iNet", -1];
+            _in_network_range = (_vehNet > -1) && {_vehNet == _side_id};
         };
-        _max_dist = 1000 + 1000 * _up_r;
-        if (_vehicle distance (_vehicle getVariable "AN_Conn") > _max_dist) then {
-            _in_network_range = false;
-        };
-    };
-};
         
         if (_player_connected && ((_isFriendlyVeh || _vehicle in HUD_T_OBJ || _vehicle in (_sl getVariable "CTI_HUD_SHARED")) && _in_network_range)) then {
 

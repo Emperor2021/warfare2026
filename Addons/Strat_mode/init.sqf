@@ -63,7 +63,7 @@ HUD_WRITE=false;
 CTI_ANET_Con=False;
 CTI_ANET_Obj=False;
 SM_Ask_Town=objNull;
-Client_AN_Connected=True;
+Client_AN_Connected=False;   // до первой реплики сети UI закрыт (fail-closed)
 HUD_T_OBJ=[];
 
 

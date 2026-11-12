@@ -35,7 +35,8 @@ if (_vehicle == (_side) call CTI_CO_FNC_GetSideHQ  ) exitwith {
 
 // man and inside vehicle
 
-if (_vehicle isKindOf "Man" && !(vehicle _vehicle == _vehicle)&& (vehicle _vehicle) getVariable "AN_iNet" == _side_id  ) exitwith {
+// getVariable с default: nil в AN_iNet иначе даёт type error и убивает скрипт
+if (_vehicle isKindOf "Man" && !(vehicle _vehicle == _vehicle)&& (vehicle _vehicle) getVariable ["AN_iNet",-1] == _side_id  ) exitwith {
 	if !(_vehicle getVariable "AN_Conn" == (vehicle _vehicle) ) then {_vehicle setVariable ["AN_Conn",vehicle _vehicle,true];}; };
 
 // Candidates and max distance
@@ -61,7 +62,7 @@ if (_side in [east,west]) then {
 if (count _candidates == 0 || _vehicle isKindOf "FlagPole_F"&& (_side in [east,west])) then {
 	{
 		_town=_x;
-		if (!(isNull _town) && !(_town == _vehicle) && _vehicle distance _town <=  _max_distance && (_town getVariable "AN_iNet" == _side_id )&& ! (_x getVariable "AN_Conn" == _vehicle) && {_x == _vehicle} count (_x getVariable ["AN_Parrents",[]]) == 0 ) then
+				if (!(isNull _town) && !(_town == _vehicle) && _vehicle distance _town <=  _max_distance && (_town getVariable ["AN_iNet",-1] == _side_id )&& ! (_x getVariable ["AN_Conn",objNull] == _vehicle) && {_x == _vehicle} count (_x getVariable ["AN_Parrents",[]]) == 0 ) then
 		{
 			_candidates set [count _candidates,_town];
 		};
@@ -78,9 +79,19 @@ if ((count _candidates == 0) && _side in [east,west]) then {
 // try to connect to another connected vehicle
 if (!(_vehicle isKindOf "FlagPole_F"))  then {
 	{
-		if (!(_x == _vehicle) && !(_x ==(_side) call CTI_CO_FNC_GetSideHQ) && alive _x && (_x getVariable "AN_iNet" == _side_id ) && ! (_x getVariable "AN_Conn" == _vehicle) && {_x == _vehicle} count (_x getVariable ["AN_Parrents",[]]) == 0 ) then {_candidates set [count _candidates,_x]};
+		// Ретранслятор обязан быть в радиусе сети этого узла (как для ЦУ/городов/HQ выше)
+		if (
+			(_vehicle distance _x <= _max_distance) &&
+			!(_x == _vehicle) &&
+			!(_x == (_side) call CTI_CO_FNC_GetSideHQ) &&
+			alive _x &&
+			(_x getVariable ["AN_iNet",-1] == _side_id) &&
+			!(_x getVariable ["AN_Conn",objNull] == _vehicle) &&
+			{_x == _vehicle} count (_x getVariable ["AN_Parrents",[]]) == 0
+		) then {_candidates set [count _candidates,_x]};
 	} count vehicles;
 };
+
 
 // sort candidates
 _final = [_vehicle, _candidates] call CTI_CO_FNC_GetClosestEntity;

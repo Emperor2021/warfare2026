@@ -218,30 +218,18 @@ with missionNamespace do {
 		};
 	};
 
-	// === ЗАПУСК СЕРВЕРНОГО ЦИКЛА ОБНОВЛЕНИЯ СЕТИ ДЛЯ БОТОВ-НОВИБКОВ ===
+	// === СЕТЬ ДЛЯ БОТОВ ===
+	// Было: свой цикл с _bot call AN_Update_Connection.
+	// AN_Update_Connection — сам бесконечный while со sleep 3, спроектирован под spawn.
+	// Вызов через call блокировал внешний поток: AN_Reconfigure выполнялся один раз,
+	// sleep 5 недостижим, бот никогда не переподключался.
+	// Плюс обход AN_Launch не писал AN_updHandle → конфликт с guard'ом по scriptDone.
+	// Используем существующий AN_Launch: он спавнит оба цикла и хранит handles.
 	CTI_PVF_Request_BotNetworkInit = {
 		private ["_bot"];
 		_bot = _this select 0;
-		if (isNil "_bot" || isNull _bot || !alive _bot) exitWith {};
-		
-		// Запускаем серверный цикл обновления сети для бота
-		[_bot] spawn {
-			private ["_bot"];
-			_bot = _this select 0;
-			if (CTI_Log_Level >= CTI_Log_Debug) then {
-				["DEBUG", "SERVER_BOT_NETWORK", format ["Starting network update for bot %1", _bot]] call CTI_CO_FNC_Log;
-			};
-			while {alive _bot && !CTI_GameOver} do {
-				// Обновляем AN_Conn (переподключение к ближайшей структуре)
-				_bot call AN_Reconfigure;
-				// Обновляем AN_iNet на основе AN_Conn
-				_bot call AN_Update_Connection;
-				sleep 5;
-			};
-			if (CTI_Log_Level >= CTI_Log_Debug) then {
-				["DEBUG", "SERVER_BOT_NETWORK", format ["Stopping network update for bot %1", _bot]] call CTI_CO_FNC_Log;
-			};
-		};
+		if (isNil "_bot" || {isNull _bot} || {!alive _bot}) exitWith {};
+		[_bot, (side _bot) call CTI_CO_FNC_GetSideID] spawn AN_Launch;
 	};
 
 };

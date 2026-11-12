@@ -30,8 +30,7 @@ if (CTI_IsClient && hasInterface) then {
                 !isNull player && alive player
             };
 
-            [player, CTI_P_SideID] spawn AN_Launch;
-
+            
             waitUntil {
                 sleep 0.1;
                 !isNull player &&
@@ -59,6 +58,10 @@ if (CTI_IsClient && hasInterface) then {
                     {!isNull _conn} &&
                     {alive _conn};
 
+                // Client_AN_Connected — производное состояние для UI, только чтение реплики
+                if (isNil "Client_AN_Connected" || {Client_AN_Connected != _isConnected}) then {
+                    Client_AN_Connected = _isConnected;
+                };
                 sleep 0.2;
             };
         };
@@ -77,18 +80,17 @@ if (CTI_IsServer) then {
         true
     } count switchableUnits;
 
-    {
-        [_x, (side _x) call CTI_CO_FNC_GetSideID] spawn AN_Launch;
-        true
-    } count playableUnits;
-
-    // === ЗАПУСК СЕТИ ДЛЯ ВСЕХ ИГРОКОВ (не только playable) ===
-    {
-        if (isPlayer _x && !(_x in playableUnits)) then {
-            [_x, (side _x) call CTI_CO_FNC_GetSideID] spawn AN_Launch;
+        0 spawn {
+        while {!CTI_GameOver} do {
+            {
+                                private _h = _x getVariable ["AN_updHandle", scriptNull];
+                if (alive _x && {isNull _h || {scriptDone _h}}) then {
+                    [_x, (side _x) call CTI_CO_FNC_GetSideID] spawn AN_Launch;
+                };
+            } forEach allPlayers;
+            sleep 2;
         };
-        true
-    } count allPlayers;
+    };
 
     {
         [_x, -1] spawn AN_Launch;

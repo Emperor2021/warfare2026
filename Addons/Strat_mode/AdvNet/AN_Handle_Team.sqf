@@ -6,8 +6,12 @@ while {!CTI_GameOver && local leader _team} do {
 		sleep 1;
 		alive leader _team
 	};
-	// Only launch if network is not yet initialized
-	if (isNil {(leader _team) getVariable "AN_iNet"}) then {
-		[leader _team, _side] call AN_Launch;
+	// Перезапуск по мёртвому циклу, а не по отсутствию AN_iNet.
+	// При падении цикла по ошибке хвост AN_Update_Connection не выполняется,
+	// AN_iNet остаётся непустым — старый признак никогда не срабатывал.
+	private _leader = leader _team;
+	private _h = _leader getVariable ["AN_updHandle", scriptNull];
+	if (isNull _h || {scriptDone _h}) then {
+		[_leader, _side] call AN_Launch;
 	};
 };

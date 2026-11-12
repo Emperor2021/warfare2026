@@ -40,6 +40,7 @@ if (_vehicle isKindOf "FlagPole_F") then {_max_distance=100000};
 if (_vehicle distance _connection > _max_distance) exitWith {false};
 
 
-if (! (alive _connection && _connection getVariable "AN_iNet" == _side_id) ) exitWith {false};
+// default обязателен: у мёртвого узла AN_iNet = nil, сравнение nil убивает цикл обновления
+if (! (alive _connection && _connection getVariable ["AN_iNet",-1] == _side_id) ) exitWith {false};
 
 true
