@@ -202,6 +202,10 @@ while {! (((getMarkerPos format ["HELO_START_%1", _i])select 0) == 0)} do
 		for '_i' from 1 to count(_maxUpgradesConfig) do { _upgrades pushBack 0 };
 	};
 
+	// Сеть: взлом и восстановление всегда по дефолту (не трогать)
+	_upgrades set [CTI_UPGRADE_HEN, 0];
+	_upgrades set [CTI_UPGRADE_AHEN, 0];
+
 	if ((missionNamespace getvariable "CTI_VEHICLES_AIR_FFAR")==2) then {_upgrades set [CTI_UPGRADE_AIR_FFAR,1]};
 	if ((missionNamespace getvariable "CTI_VEHICLES_AIR_AT") ==2)then {_upgrades set [CTI_UPGRADE_AIR_AT,1]};
 	if( (missionNamespace getvariable "CTI_VEHICLES_AIR_AA")==2 ) then {_upgrades set [CTI_UPGRADE_AIR_AA,1]};
